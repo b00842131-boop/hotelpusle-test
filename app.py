@@ -623,15 +623,16 @@ with col_right:
 
     selected_row = filtered_hotels_df[filtered_hotels_df["name"] == selected_hotel].iloc[0]
 
-    # Light CARTO basemap: white, minimal, matches the page (no API key needed)
+    # OpenStreetMap tiles (free, no API key) turned light grey with CSS so the map matches the white page
     hotel_map = folium.Map(
         location=[float(selected_row["lat"]), float(selected_row["lon"])],
         zoom_start=13,
-        tiles="CartoDB positron",
+        tiles="OpenStreetMap",
     )
     # Keep the required map credits, but as a small transparent line instead of a white bar
     hotel_map.get_root().header.add_child(folium.Element(
-        "<style>.leaflet-control-attribution{font-size:9px!important;background:rgba(255,255,255,0.55)!important;"
+        "<style>.leaflet-tile-pane{filter:grayscale(100%) brightness(1.08) contrast(0.88);}"
+        ".leaflet-control-attribution{font-size:9px!important;background:rgba(255,255,255,0.55)!important;"
         "color:#94a3b8!important;padding:0 4px!important;}"
         ".leaflet-control-attribution a{color:#94a3b8!important;}</style>"
     ))
