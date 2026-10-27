@@ -112,15 +112,12 @@ HOTELS_METADATA = pd.DataFrame([
     {"name": "ibis Styles Paris République", "brand": "ibis Styles", "group": "Accor Economy", "stars": 3, "lat": 48.8672, "lon": 2.3644, "color": [239, 68, 68]},
 ])
 
-# Folium pin colors per brand (same families as the "color" column above)
-BRAND_PIN_COLORS = {
-    "Raffles": "purple",
-    "Sofitel": "purple",
-    "Pullman": "blue",
-    "Novotel": "green",
-    "Mercure": "orange",
-    "ibis": "red",
-    "ibis Styles": "red",
+# Map dot colors per segment (same palette as the dashboard badges)
+GROUP_COLORS = {
+    "Accor Luxury": "#9333ea",
+    "Accor Premium": "#2563eb",
+    "Accor Midscale": "#10b981",
+    "Accor Economy": "#ef4444",
 }
 
 # Initialize Session State
@@ -626,22 +623,29 @@ with col_right:
 
     selected_row = filtered_hotels_df[filtered_hotels_df["name"] == selected_hotel].iloc[0]
 
-    # OpenStreetMap tiles: colored streets, parks, the Seine and place names (no API key needed)
+    # Light CARTO basemap: white, minimal, matches the page (no API key needed)
     hotel_map = folium.Map(
         location=[float(selected_row["lat"]), float(selected_row["lon"])],
         zoom_start=13,
-        tiles="OpenStreetMap",
+        tiles="CartoDB positron",
     )
+    # Keep the required map credits, but as a small transparent line instead of a white bar
+    hotel_map.get_root().header.add_child(folium.Element(
+        "<style>.leaflet-control-attribution{font-size:9px!important;background:rgba(255,255,255,0.55)!important;"
+        "color:#94a3b8!important;padding:0 4px!important;}"
+        ".leaflet-control-attribution a{color:#94a3b8!important;}</style>"
+    ))
     for _, h in filtered_hotels_df.iterrows():
         is_selected = h["name"] == selected_hotel
-        folium.Marker(
+        folium.CircleMarker(
             location=[float(h["lat"]), float(h["lon"])],
+            radius=11 if is_selected else 7,
+            color="#0f172a" if is_selected else "#ffffff",
+            weight=3 if is_selected else 2,
+            fill=True,
+            fill_color=GROUP_COLORS.get(h["group"], "#64748b"),
+            fill_opacity=0.95,
             tooltip=f"{h['name']} — {h['brand']} | {h['stars']}★",
-            icon=folium.Icon(
-                color="black" if is_selected else BRAND_PIN_COLORS.get(h["brand"], "gray"),
-                icon="star" if is_selected else "bed",
-                prefix="fa",
-            ),
         ).add_to(hotel_map)
 
     map_event = st_folium(
@@ -650,6 +654,14 @@ with col_right:
         use_container_width=True,
         returned_objects=["last_object_clicked"],
         key="hotel_map",
+    )
+    st.markdown(
+        "<div style='font-size:0.78rem; color:#64748b; margin-top:-6px;'>"
+        + " &nbsp; ".join(
+            f"<span style='color:{c};'>●</span> {g.replace('Accor ', '')}" for g, c in GROUP_COLORS.items()
+        )
+        + "</div>",
+        unsafe_allow_html=True,
     )
 
     # The last click stays in the map's state across reruns, so only react to a NEW click;
